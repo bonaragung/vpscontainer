@@ -33,3 +33,8 @@ vpscontainer/
 │   └── manage.html   ← Form control VPS
 │   └── monitor.html  ← Form monitoring VPS
 
+
+## Membuat Custome Image
+
+docker build -f Dockerkali -t vps-kali .
+
