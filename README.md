@@ -1,3 +1,5 @@
+![Diagram VPS](images/ss.png)
+
 # VPS Container Web
 
 Project ini adalah aplikasi FastAPI sederhana untuk mengelola VPS melalui web.
