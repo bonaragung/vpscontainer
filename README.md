@@ -28,13 +28,12 @@ Buka browser dan akses http://localhost:8000
 
 vpscontainer/
 ├── main.py           ← FastAPI app
-|── Dockerfile
-|── supervisord.conf
+|── Dockerfile        ← Membuat Custom Images
+|── supervisord.conf  ← Process manager di dalam container
 ├── templates/
 │   ├── form.html     ← Form input VPS
 │   └── manage.html   ← Form control VPS
 │   └── monitor.html  ← Form monitoring VPS
-
 
 ## Membuat Custome Image
 
