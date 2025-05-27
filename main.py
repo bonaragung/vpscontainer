@@ -2,39 +2,39 @@ from fastapi import FastAPI, Request, Form, Depends, HTTPException, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
-from starlette.middleware.sessions import SessionMiddleware # Untuk sesi/cookie
+from starlette.middleware.sessions import SessionMiddleware
 import subprocess
 import re
 import json
-from passlib.context import CryptContext # Untuk hashing password
+from passlib.context import CryptContext
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
-# Konfigurasi Session Middleware
-# Ganti dengan secret key yang kuat dan acak di lingkungan produksi!
-# Anda bisa menghasilkan string acak dengan: import secrets; secrets.token_hex(32)
-app.add_middleware(SessionMiddleware, secret_key="super-secret-key-yang-sangat-rahasia-dan-panjang")
+app.add_middleware(SessionMiddleware, secret_key="super-secret-key-yang-sangat-rahasia-dan-panjang") # Ganti secret key!
 
-# Konfigurasi Hashing Password
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# Pengguna yang diizinkan (username: hashed_password)
-# Ganti dengan username dan password Anda
-# Untuk menghasilkan hash: print(pwd_context.hash("password_anda_disini"))
 USERS = {
     "admin": pwd_context.hash("admin123"), # Ganti 'admin123' dengan password Anda
-    # Tambahkan user lain jika perlu
-    # "user2": pwd_context.hash("password456"),
 }
 
-security = HTTPBasic() # Untuk otentikasi dasar (sekarang tidak digunakan langsung untuk form login, tapi bisa jadi fallback)
+security = HTTPBasic()
 
 DEFAULT_RAM = "512m"
 DEFAULT_CPU = "0.5"
 DEFAULT_STORAGE = "10G"
-IMAGE_NAME = "vps-image"
+AVAILABLE_IMAGES = [
+    "vps-image",
+    "vps-ubuntu",
+    "vps-debian",
+    "vps-fedora",
+    "vps-kali"
+]
+DEFAULT_IMAGE = AVAILABLE_IMAGES[0]
+
 DESCRIPTION_LABEL = "com.myvpsapp.description"
+IMAGE_LABEL = "com.myvpsapp.image"
 
 # --- Fungsi Utility ---
 def verify_password(plain_password, hashed_password):
@@ -74,17 +74,21 @@ def list_vps():
     )
 
     vps_list = []
+    app_related_images = set(AVAILABLE_IMAGES)
+
     for line in result.stdout.strip().splitlines():
         parts = line.split("|")
         if len(parts) == 4:
-            container_id, name, status, image = parts
-            if image == IMAGE_NAME:
+            container_id, name, status, image_used_by_docker = parts
+            
+            if image_used_by_docker in app_related_images:
                 ssh_port = "N/A"
                 web_port = "N/A"
                 hostname = ""
                 ram_usage = "N/A"
                 cpu_usage = "N/A"
                 description = ""
+                selected_image = image_used_by_docker
 
                 try:
                     inspect_result = subprocess.run(
@@ -114,6 +118,7 @@ def list_vps():
 
                     labels = inspect_data.get('Config', {}).get('Labels', {})
                     description = labels.get(DESCRIPTION_LABEL, "")
+                    selected_image = labels.get(IMAGE_LABEL, image_used_by_docker)
 
                     ports = inspect_data.get('NetworkSettings', {}).get('Ports', {})
                     for container_port, host_details in ports.items():
@@ -139,13 +144,35 @@ def list_vps():
                     "hostname": hostname,
                     "ram": ram_usage,
                     "cpu": cpu_usage,
-                    "description": description
+                    "description": description,
+                    "image": selected_image
                 })
     return vps_list
 
+def get_docker_stats():
+    """Mengambil statistik Docker dari semua kontainer yang berjalan."""
+    stats_list = []
+    try:
+        # Jalankan docker stats --no-stream --format json
+        # Ini akan memberikan satu snapshot data dalam format JSON
+        cmd = ["docker", "stats", "--no-stream", "--format", "{{json .}}"]
+        process = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        
+        # Setiap baris output adalah objek JSON terpisah
+        for line in process.stdout.strip().split('\n'):
+            if line:
+                try:
+                    stats_data = json.loads(line)
+                    stats_list.append(stats_data)
+                except json.JSONDecodeError as e:
+                    print(f"Error decoding JSON line: {e} - Line: {line}")
+    except subprocess.CalledProcessError as e:
+        print(f"Error running docker stats: {e.stderr}")
+    return stats_list
+
+
 # --- Authentication Logic ---
 def get_current_user(request: Request):
-    """Mengecek apakah pengguna sudah login (ada di sesi)"""
     if "username" not in request.session:
         raise HTTPException(
             status_code=status.HTTP_303_SEE_OTHER,
@@ -159,7 +186,7 @@ def get_current_user(request: Request):
 @app.get("/login", response_class=HTMLResponse)
 async def login_get(request: Request):
     if "username" in request.session:
-        return RedirectResponse("/", status_code=303) # Sudah login, redirect ke home
+        return RedirectResponse("/", status_code=303)
     return templates.TemplateResponse("login.html", {"request": request, "error_message": None})
 
 @app.post("/login", response_class=HTMLResponse)
@@ -167,18 +194,22 @@ async def login_post(request: Request, username: str = Form(...), password: str 
     if username not in USERS or not verify_password(password, USERS[username]):
         return templates.TemplateResponse("login.html", {"request": request, "error_message": "Username atau password salah."})
     
-    request.session["username"] = username # Simpan username di sesi
-    return RedirectResponse("/", status_code=303) # Redirect ke halaman home setelah login sukses
+    request.session["username"] = username
+    return RedirectResponse("/", status_code=303)
 
 @app.post("/logout")
 async def logout(request: Request):
-    request.session.clear() # Hapus semua dari sesi
+    request.session.clear()
     return RedirectResponse("/login", status_code=303)
 
-# Tambahkan `Depends(get_current_user)` ke semua endpoint yang ingin dilindungi
 @app.get("/", response_class=HTMLResponse)
 async def form_get(request: Request, current_user: str = Depends(get_current_user)):
-    return templates.TemplateResponse("form.html", {"request": request, "current_user": current_user})
+    return templates.TemplateResponse("form.html", {
+        "request": request,
+        "current_user": current_user,
+        "available_images": AVAILABLE_IMAGES,
+        "default_image": DEFAULT_IMAGE
+    })
 
 @app.post("/", response_class=HTMLResponse)
 async def form_post(
@@ -188,9 +219,20 @@ async def form_post(
     ram: str = Form(DEFAULT_RAM),
     cpu: str = Form(DEFAULT_CPU),
     storage: str = Form(DEFAULT_STORAGE),
+    image: str = Form(DEFAULT_IMAGE),
     description: str = Form(""),
-    current_user: str = Depends(get_current_user) # Lindungi endpoint ini
+    current_user: str = Depends(get_current_user)
 ):
+    if image not in AVAILABLE_IMAGES:
+        return templates.TemplateResponse("form.html", {
+            "request": request,
+            "error": True,
+            "stderr": f"Image '{image}' tidak valid.",
+            "current_user": current_user,
+            "available_images": AVAILABLE_IMAGES,
+            "default_image": DEFAULT_IMAGE
+        })
+
     hostname = hostname or name
     used_ports = get_available_ports()
     ssh_port = find_next_port(used_ports)
@@ -209,13 +251,15 @@ async def form_post(
     
     if description:
         cmd.extend(["--label", f"{DESCRIPTION_LABEL}={description}"])
+    
+    cmd.extend(["--label", f"{IMAGE_LABEL}={image}"])
 
     if is_storage_opt_supported():
         cmd += ["--storage-opt", f"size={storage}"]
     else:
         storage = "Tidak didukung (dilewati)"
 
-    cmd.append(IMAGE_NAME)
+    cmd.append(image)
 
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, check=True)
@@ -232,23 +276,70 @@ async def form_post(
             "storage": storage,
             "container_id": container_id,
             "description": description,
-            "current_user": current_user # Sertakan user di template
+            "image": image,
+            "current_user": current_user,
+            "available_images": AVAILABLE_IMAGES,
+            "default_image": DEFAULT_IMAGE
         })
     except subprocess.CalledProcessError as e:
         return templates.TemplateResponse("form.html", {
             "request": request,
             "error": True,
             "stderr": e.stderr,
-            "current_user": current_user # Sertakan user di template
+            "current_user": current_user,
+            "available_images": AVAILABLE_IMAGES,
+            "default_image": DEFAULT_IMAGE
         })
 
 @app.get("/manage", response_class=HTMLResponse)
-async def manage_vps(request: Request, current_user: str = Depends(get_current_user)): # Lindungi endpoint ini
+async def manage_vps(request: Request, current_user: str = Depends(get_current_user)):
     vps_list = list_vps()
     return templates.TemplateResponse("manage.html", {"request": request, "vps_list": vps_list, "current_user": current_user})
 
+# Endpoint baru untuk Monitoring
+@app.get("/monitor", response_class=HTMLResponse)
+async def monitor_vps(request: Request, current_user: str = Depends(get_current_user)):
+    stats_data = get_docker_stats()
+    # Filter stats data agar hanya menampilkan kontainer yang kita kelola
+    # Yaitu, kontainer yang imagenya ada di AVAILABLE_IMAGES
+    filtered_stats = []
+    for stat in stats_data:
+        # Coba ambil image yang digunakan dari 'Image' field di docker stats
+        # Jika tidak ada, fallback ke IMAGE_LABEL jika kita bisa melakukan inspect dari sini
+        # Untuk kesederhanaan, kita bisa mengecek Image ID atau Name jika itu cocok dengan image yang kita kelola
+        # Namun, cara paling akurat adalah dengan membandingkan nama image yang digunakan di docker stats
+        # dengan daftar AVAILABLE_IMAGES.
+        # Catatan: docker stats --format json tidak selalu memberikan 'Image' dengan nama lengkap
+        # Terkadang hanya ID atau SHA. Perlu disesuaikan jika ingin lebih akurat.
+        # Untuk demo ini, kita akan asumsikan 'Image' field cukup akurat.
+        image_name_from_stat = stat.get('Image', '')
+        if any(img_prefix in image_name_from_stat for img_prefix in AVAILABLE_IMAGES):
+            # Coba ambil nama kontainer dari `Name` atau `ID`
+            container_name = stat.get('Name', stat.get('ID', 'N/A'))
+            # Cek apakah nama kontainer ini ada di daftar VPS yang kita kelola (melalui list_vps)
+            # Ini mungkin terlalu kompleks, jadi kita akan tampilkan semua kontainer yang di-stats oleh Docker.
+            # Jika Anda ingin hanya yang dikelola aplikasi ini, Anda perlu mendapatkan daftar nama kontainer dari list_vps
+            # terlebih dahulu dan memfilter berdasarkan nama.
+            filtered_stats.append(stat)
+
+    # Sebagai alternatif yang lebih sederhana, kita bisa mendapatkan semua nama VPS yang dikelola,
+    # lalu memfilter docker stats berdasarkan nama tersebut.
+    managed_vps_names = {vps['name'] for vps in list_vps()}
+    
+    final_stats = []
+    for stat in stats_data:
+        if stat.get('Name') in managed_vps_names:
+            final_stats.append(stat)
+
+    return templates.TemplateResponse("monitor.html", {
+        "request": request,
+        "stats_list": final_stats, # Kirim data stats ke template
+        "current_user": current_user
+    })
+
+
 @app.post("/toggle")
-async def toggle_vps(name: str = Form(...), current_user: str = Depends(get_current_user)): # Lindungi endpoint ini
+async def toggle_vps(name: str = Form(...), current_user: str = Depends(get_current_user)):
     info = subprocess.run(["docker", "inspect", "-f", "{{.State.Running}}", name], capture_output=True, text=True)
     if info.stdout.strip() == "true":
         subprocess.run(["docker", "stop", name])
@@ -257,7 +348,7 @@ async def toggle_vps(name: str = Form(...), current_user: str = Depends(get_curr
     return RedirectResponse("/manage", status_code=303)
 
 @app.post("/delete")
-async def delete_vps(name: str = Form(...), current_user: str = Depends(get_current_user)): # Lindungi endpoint ini
+async def delete_vps(name: str = Form(...), current_user: str = Depends(get_current_user)):
     subprocess.run(["docker", "rm", "-f", name])
     return RedirectResponse("/manage", status_code=303)
 
@@ -268,13 +359,14 @@ async def edit_vps(
     ram: str = Form(...),
     cpu: str = Form(...),
     description: str = Form(""),
-    current_user: str = Depends(get_current_user) # Lindungi endpoint ini
+    current_user: str = Depends(get_current_user)
 ):
     current_ssh_port = "N/A"
     current_web_port = "N/A"
     current_ram = DEFAULT_RAM
     current_cpu = DEFAULT_CPU
     current_description = ""
+    current_image = DEFAULT_IMAGE
 
     try:
         inspect_result = subprocess.run(
@@ -308,6 +400,7 @@ async def edit_vps(
             
             labels = inspect_data.get('Config', {}).get('Labels', {})
             current_description = labels.get(DESCRIPTION_LABEL, "")
+            current_image = labels.get(IMAGE_LABEL, inspect_data.get('Config', {}).get('Image', DEFAULT_IMAGE))
 
     except Exception as e:
         print(f"Error getting current details for {name}: {e}")
@@ -342,7 +435,11 @@ async def edit_vps(
     
     if description:
         cmd.extend(["--label", f"{DESCRIPTION_LABEL}={description}"])
+    
+    cmd.extend(["--label", f"{IMAGE_LABEL}={current_image}"])
 
-    cmd.append(IMAGE_NAME)
+
+    cmd.append(current_image)
+
     subprocess.run(cmd)
     return RedirectResponse("/manage", status_code=303)
