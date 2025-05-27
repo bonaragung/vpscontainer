@@ -47,6 +47,19 @@ uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4
 
 ```
 
+# # Gunakan Gunicorn + Uvicorn workers
+
+Install dulu Gunicorn:
+```
+pip install gunicorn
+```
+Jalankan FastAPI dengan Gunicorn menggunakan worker class Uvicorn:
+
+```
+gunicorn main:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
+
+```
+
 # # Jalankan Otomatis sebagai service / daemon (misal systemd)
 
 Biar server kamu jalan otomatis dan stabil:
