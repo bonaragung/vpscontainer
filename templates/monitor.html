@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitor VPS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            display: flex;
+            min-height: 100vh;
+            color: #2d3748;
+        }
+
+        .sidebar {
+            width: 250px;
+            background-color: #2d3748;
+            color: #ffffff;
+            padding: 20px 0;
+            box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        .sidebar h2 {
+            font-size: 20px;
+            text-align: center;
+            margin-bottom: 30px;
+            color: #e2e8f0;
+            font-weight: 700;
+        }
+
+        .sidebar ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar ul li {
+            margin-bottom: 5px;
+        }
+
+        .sidebar ul li a {
+            display: block;
+            padding: 12px 20px;
+            color: #cbd5e0;
+            text-decoration: none;
+            font-size: 16px;
+            transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+            font-weight: 500;
+        }
+
+        .sidebar ul li a:hover,
+        .sidebar ul li a.active {
+            background-color: #4a5568;
+            color: #ffffff;
+        }
+        
+        .logout-form {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: calc(100% - 40px);
+        }
+        .logout-button {
+            display: block;
+            width: 100%;
+            padding: 10px 15px;
+            background-color: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 600;
+            transition: background-color 0.2s ease-in-out;
+        }
+        .logout-button:hover {
+            background-color: #dc2626;
+        }
+
+        .main-content {
+            flex-grow: 1;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .header-section h1 {
+            font-size: 28px;
+            color: #1a202c;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .refresh-button {
+            background-color: #007bff;
+            color: #ffffff;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+        .refresh-button:hover {
+            background-color: #0056b3;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        }
+        .refresh-button svg {
+            width: 1em;
+            height: 1em;
+            vertical-align: middle;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill: none;
+        }
+
+        .stats-table-container {
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            overflow-x: auto;
+        }
+
+        .stats-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        .stats-table th,
+        .stats-table td {
+            padding: 15px 20px;
+            border-bottom: 1px solid #e2e8f0;
+            color: #2d3748;
+            font-size: 15px;
+            vertical-align: middle;
+            white-space: nowrap; /* Prevent wrapping for stats */
+        }
+
+        .stats-table th {
+            background-color: #f8f8f8;
+            font-weight: 600;
+            color: #4a5568;
+            text-transform: uppercase;
+            font-size: 13px;
+            letter-spacing: 0.5px;
+        }
+
+        .stats-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .no-data-message {
+            text-align: center;
+            padding: 20px;
+            color: #718096;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h2>Panel Admin</h2>
+        <ul>
+            <li><a href="/">HOME</a></li>
+            <li><a href="/manage">MANAGE</a></li>
+            <li><a href="/monitor" class="active">MONITOR</a></li> {# Set active class for Monitor #}
+        </ul>
+        <form action="/logout" method="post" class="logout-form">
+            <button type="submit" class="logout-button">Logout ({{ current_user }})</button>
+        </form>
+    </div>
+
+    <div class="main-content">
+        <div class="header-section">
+            <h1>Monitoring VPS</h1>
+            <button class="refresh-button" onclick="window.location.reload()">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M23 4L23 10L17 10M1 20L1 14L7 14M3.51 9C3.89 7.6 4.75 6.42 5.8 5.49C6.86 4.56 8.16 3.91 9.58 3.63C11 3.35 12.48 3.46 13.88 3.96C15.28 4.47 16.5 5.35 17.43 6.5C18.36 7.65 18.94 9.04 19.11 10.5C19.29 11.95 19.04 13.43 18.39 14.78C17.74 16.14 16.73 17.29 15.48 18.1C14.23 18.92 12.78 19.34 11.29 19.34C9.8 19.34 8.35 18.92 7.1 18.1C5.85 17.29 4.84 16.14 4.19 14.78M23 4L19.5 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Refresh Data
+            </button>
+        </div>
+
+        <div class="stats-table-container">
+            {% if stats_list %}
+            <table class="stats-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>CPU %</th>
+                        <th>MEM Usage / Limit</th>
+                        <th>MEM %</th>
+                        <th>Net I/O</th>
+                        <th>Block I/O</th>
+                        <th>PIDs</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stat in stats_list %}
+                    <tr>
+                        <td>{{ stat.ID }}</td>
+                        <td>{{ stat.Name }}</td>
+                        <td>{{ stat.CPUPerc }}</td>
+                        <td>{{ stat.MemUsage }} / {{ stat.MemLimit }}</td>
+                        <td>{{ stat.MemPerc }}</td>
+                        <td>{{ stat.NetIO }}</td>
+                        <td>{{ stat.BlockIO }}</td>
+                        <td>{{ stat.PIDs }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="no-data-message">Tidak ada data monitoring yang tersedia atau tidak ada VPS yang sedang berjalan.</p>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

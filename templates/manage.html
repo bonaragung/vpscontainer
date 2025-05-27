@@ -25,7 +25,7 @@
             display: flex;
             flex-direction: column;
             flex-shrink: 0;
-            position: relative; /* Tambahkan ini untuk logout button */
+            position: relative;
         }
 
         .sidebar h2 {
@@ -62,7 +62,6 @@
             color: #ffffff;
         }
         
-        /* Logout Button Styling */
         .logout-form {
             position: absolute;
             bottom: 20px;
@@ -295,6 +294,7 @@
         <ul>
             <li><a href="/">HOME</a></li>
             <li><a href="/manage" class="active">MANAGE</a></li>
+            <li><a href="/monitor">MONITOR</a></li> {# Tambahkan menu Monitor #}
         </ul>
         <form action="/logout" method="post" class="logout-form">
             <button type="submit" class="logout-button">Logout ({{ current_user }})</button>
@@ -378,6 +378,7 @@
                                 <p><strong>Web Port:</strong> <code>{{ vps.web_port }}</code></p>
                                 <p><strong>RAM:</strong> <code>{{ vps.ram }}</code></p>
                                 <p><strong>CPU:</strong> <code>{{ vps.cpu }}</code></p>
+                                <p><strong>Image:</strong> <code>{{ vps.image }}</code></p>
                                 {% if vps.description %}
                                 <p><strong>Keterangan:</strong> <code>{{ vps.description }}</code></p>
                                 {% endif %}
