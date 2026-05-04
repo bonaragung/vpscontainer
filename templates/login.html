@@ -1,114 +1,88 @@
 <!DOCTYPE html>
-<html lang="en">
+<html class="light" lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        inter: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f0f2f5;
-            margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            color: #2d3748;
-        }
-
-        .login-container {
-            background-color: #ffffff;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-            padding: 40px;
-            width: 100%;
-            max-width: 400px;
-            text-align: center;
-        }
-
-        h1 {
-            font-size: 28px;
-            color: #1a202c;
-            margin-bottom: 30px;
-            font-weight: 700;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-            text-align: left; /* Align labels and inputs to the left */
-        }
-
-        .form-group label {
-            display: block;
-            font-size: 14px;
-            color: #4a5568;
-            margin-bottom: 8px;
-            font-weight: 500;
-        }
-
-        .form-control-custom {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #cbd5e0;
-            border-radius: 6px;
-            font-size: 16px;
-            color: #2d3748;
-            transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-            box-sizing: border-box;
-        }
-
-        .form-control-custom:focus {
-            outline: none;
-            border-color: #4299e1;
-            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.25);
-        }
-
-        button.primary-button {
-            background-color: #3b82f6;
-            color: #ffffff;
-            padding: 12px 24px;
-            border: none;
-            border-radius: 6px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-            margin-top: 20px;
-            width: 100%; /* Make button full width */
-        }
-
-        button.primary-button:hover {
-            background-color: #2563eb;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .error-message {
-            color: #e53e3e; /* Red for error messages */
-            font-size: 14px;
-            margin-bottom: 15px;
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
     </style>
+    <title>Login - CloudStack VPS</title>
 </head>
-<body>
-    <div class="login-container">
-        <h1>Login ke Panel</h1>
-
-        {% if error_message %}
-            <p class="error-message">{{ error_message }}</p>
-        {% endif %}
-
-        <form method="post" action="/login">
-            <div class="form-group">
-                <label for="username">Username</label>
-                <input type="text" id="username" class="form-control-custom" name="username" required autocomplete="username">
+<body class="bg-slate-50 font-inter min-h-screen flex items-center justify-center">
+    <div class="w-full max-w-md px-6">
+        <!-- Logo -->
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center gap-3 mb-4">
+                <div class="w-12 h-12 rounded-xl bg-indigo-600 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-white text-3xl" data-icon="cloud">cloud</span>
+                </div>
+                <div class="text-left">
+                    <div class="text-2xl font-black tracking-tight text-slate-900">CloudStack VPS</div>
+                    <div class="text-[10px] text-slate-400 uppercase tracking-widest font-bold">v2.4.0-stable</div>
+                </div>
             </div>
-            <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" class="form-control-custom" name="password" required autocomplete="current-password">
+            <h1 class="text-2xl font-bold text-slate-900">Welcome Back</h1>
+            <p class="text-body-sm text-slate-500 mt-1">Sign in to manage your VPS instances</p>
+        </div>
+
+        <!-- Login Form -->
+        <div class="bg-white border border-slate-200 rounded-xl p-8 shadow-sm">
+            {% if error_message %}
+                <div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
+                    <span class="material-symbols-outlined text-red-600 text-xl" data-icon="error">error</span>
+                    <span class="text-body-sm text-red-800">{{ error_message }}</span>
+                </div>
+            {% endif %}
+
+            <form method="post" class="space-y-4">
+                <div class="space-y-1.5">
+                    <label class="text-body-sm font-medium text-slate-700" for="username">Username</label>
+                    <input type="text" id="username" name="username" required
+                        class="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-body-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                        placeholder="Enter your username">
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="text-body-sm font-medium text-slate-700" for="password">Password</label>
+                    <input type="password" id="password" name="password" required
+                        class="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-body-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                        placeholder="Enter your password">
+                </div>
+
+                <button type="submit"
+                    class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-body-sm font-semibold shadow-sm transition-colors mt-6">
+                    <span class="material-symbols-outlined text-sm" data-icon="login">login</span>
+                    Sign In
+                </button>
+            </form>
+
+            <div class="mt-6 text-center">
+                <p class="text-body-sm text-slate-500">
+                    Default credentials: <code class="bg-slate-100 px-2 py-0.5 rounded text-slate-700">admin / admin123</code>
+                </p>
             </div>
-            <button type="submit" class="primary-button">Login</button>
-        </form>
+        </div>
+
+        <p class="text-center text-body-sm text-slate-400 mt-6">
+            © 2026 CloudStack VPS. All rights reserved.
+        </p>
     </div>
 </body>
 </html>

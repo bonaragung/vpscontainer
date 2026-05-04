@@ -1,415 +1,155 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kelola VPS</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        /* (Gaya CSS yang sama seperti sebelumnya) */
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f0f2f5;
-            margin: 0;
-            display: flex;
-            min-height: 100vh;
-            color: #2d3748;
-        }
+{% extends "base.html" %}
 
-        .sidebar {
-            width: 250px;
-            background-color: #2d3748;
-            color: #ffffff;
-            padding: 20px 0;
-            box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
-            display: flex;
-            flex-direction: column;
-            flex-shrink: 0;
-            position: relative;
-        }
+{% block title %}Manage VPS - CloudStack VPS{% endblock %}
 
-        .sidebar h2 {
-            font-size: 20px;
-            text-align: center;
-            margin-bottom: 30px;
-            color: #e2e8f0;
-            font-weight: 700;
-        }
-
-        .sidebar ul {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-
-        .sidebar ul li {
-            margin-bottom: 5px;
-        }
-
-        .sidebar ul li a {
-            display: block;
-            padding: 12px 20px;
-            color: #cbd5e0;
-            text-decoration: none;
-            font-size: 16px;
-            transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
-            font-weight: 500;
-        }
-
-        .sidebar ul li a:hover,
-        .sidebar ul li a.active {
-            background-color: #4a5568;
-            color: #ffffff;
-        }
-        
-        .logout-form {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: calc(100% - 40px);
-        }
-        .logout-button {
-            display: block;
-            width: 100%;
-            padding: 10px 15px;
-            background-color: #ef4444;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 15px;
-            font-weight: 600;
-            transition: background-color 0.2s ease-in-out;
-        }
-        .logout-button:hover {
-            background-color: #dc2626;
-        }
-
-
-        .main-content {
-            flex-grow: 1;
-            padding: 40px;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .header-section {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-            flex-wrap: wrap;
-            gap: 20px;
-        }
-
-        .header-section h1 {
-            font-size: 28px;
-            color: #1a202c;
-            font-weight: 700;
-            margin: 0;
-        }
-
-        button.create-vps-button,
-        a.create-vps-button {
-            background-color: #28a745;
-            color: #ffffff;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 6px;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            text-decoration: none;
-        }
-
-        button.create-vps-button:hover,
-        a.create-vps-button:hover {
-            background-color: #218838;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        .vps-table-container {
-            background-color: #ffffff;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-            overflow-x: auto;
-        }
-
-        .vps-table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: left;
-        }
-
-        .vps-table th,
-        .vps-table td {
-            padding: 15px 20px;
-            border-bottom: 1px solid #e2e8f0;
-            color: #2d3748;
-            font-size: 15px;
-            vertical-align: middle;
-        }
-
-        .vps-table th {
-            background-color: #f8f8f8;
-            font-weight: 600;
-            color: #4a5568;
-            text-transform: uppercase;
-            font-size: 13px;
-            letter-spacing: 0.5px;
-        }
-
-        .vps-table tbody tr:last-child td {
-            border-bottom: none;
-        }
-
-        .action-buttons {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-
-        .action-form {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .action-button {
-            padding: 8px 14px;
-            border: none;
-            border-radius: 4px;
-            font-size: 13px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: background-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            color: white;
-            text-decoration: none;
-            flex-shrink: 0;
-        }
-
-        .action-button:hover {
-            opacity: 0.9;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
-        }
-
-        .button-io { background-color: #38a169; }
-        .button-io.warning { background-color: #ffc107; color: #333; }
-        .button-delete { background-color: #e53e3e; }
-        .button-edit { background-color: #3b82f6; }
-
-        .action-input {
-            width: 80px;
-            padding: 8px 10px;
-            border: 1px solid #e2e8f0;
-            border-radius: 4px;
-            font-size: 13px;
-            color: #4a5568;
-            background-color: #fcfcfc;
-            transition: border-color 0.2s ease-in-out;
-            box-sizing: border-box;
-            vertical-align: middle;
-        }
-        .action-input.description {
-            width: 150px;
-        }
-
-        .action-input:focus {
-            outline: none;
-            border-color: #a0aec0;
-            box-shadow: 0 0 0 2px rgba(160, 174, 192, 0.2);
-        }
-
-        .action-button svg,
-        .create-vps-button svg {
-            width: 1em;
-            height: 1em;
-            vertical-align: middle;
-            stroke: currentColor;
-            stroke-width: 2;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-            fill: none;
-        }
-
-        .vps-name-link {
-            cursor: pointer;
-            color: #3b82f6;
-            font-weight: 600;
-            text-decoration: none;
-            transition: color 0.2s ease-in-out;
-        }
-        .vps-name-link:hover {
-            text-decoration: underline;
-            color: #2563eb;
-        }
-
-        .port-info-row {
-            display: none;
-            background-color: #e2f0ff;
-            border-top: 1px solid #cce0ff;
-        }
-
-        .port-info-row td {
-            padding: 10px 20px;
-            font-size: 14px;
-            color: #4a5568;
-        }
-
-        .port-info-row strong {
-            color: #2d3748;
-        }
-
-        .port-info-row code {
-            background-color: #f0f4f7;
-            border-radius: 4px;
-            padding: 2px 6px;
-            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
-            font-size: 0.9em;
-            color: #3a4b67;
-        }
-        .status-text {
-            color: #718096;
-            font-size: 14px;
-        }
-        .status-text.up {
-            color: #28a745;
-            font-weight: 500;
-        }
-    </style>
-</head>
-<body>
-    <div class="sidebar">
-        <h2>Panel Admin</h2>
-        <ul>
-            <li><a href="/">HOME</a></li>
-            <li><a href="/manage" class="active">MANAGE</a></li>
-            <li><a href="/monitor">MONITOR</a></li> {# Tambahkan menu Monitor #}
-        </ul>
-        <form action="/logout" method="post" class="logout-form">
-            <button type="submit" class="logout-button">Logout ({{ current_user }})</button>
-        </form>
+{% block content %}
+<!-- Header Section -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-stack-lg">
+    <div class="space-y-1">
+        <h1 class="font-h1 text-h1 text-on-surface">Manage VPS</h1>
+        <p class="text-body-base text-on-surface-variant">Kelola dan pantau semua Virtual Private Server Anda.</p>
     </div>
+    <a href="/" class="flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-sm transition-colors">
+        <span class="material-symbols-outlined text-sm" data-icon="add">add</span>
+        <span>Create VPS</span>
+    </a>
+</div>
 
-    <div class="main-content">
-        <div class="header-section">
-            <h1>Daftar VPS</h1>
-            <a href="/" class="create-vps-button">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                Buat VPS Baru
-            </a>
+<!-- VPS List Table -->
+<div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+    <div class="px-stack-lg py-stack-md border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+        <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-slate-500" data-icon="layers">layers</span>
+            <h3 class="text-h3 font-h3">Daftar VPS</h3>
         </div>
-
-        <div class="vps-table-container">
-            <table class="vps-table">
-                <thead>
-                    <tr>
-                        <th>Nama</th>
-                        <th>Status</th>
-                        <th>Aksi</th>
-                    </tr>
-                </thead>
-                <tbody>
+        <span class="text-body-sm text-on-surface-variant">{{ vps_list|length }} instances</span>
+    </div>
+    
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-slate-50">
+                    <th class="px-stack-lg py-3 text-label-caps text-on-surface-variant uppercase">Nama</th>
+                    <th class="px-stack-lg py-3 text-label-caps text-on-surface-variant uppercase">Hostname</th>
+                    <th class="px-stack-lg py-3 text-label-caps text-on-surface-variant uppercase">Status</th>
+                    <th class="px-stack-lg py-3 text-label-caps text-on-surface-variant uppercase">SSH Port</th>
+                    <th class="px-stack-lg py-3 text-label-caps text-on-surface-variant uppercase">Web Port</th>
+                    <th class="px-stack-lg py-3 text-label-caps text-on-surface-variant uppercase">RAM</th>
+                    <th class="px-stack-lg py-3 text-label-caps text-on-surface-variant uppercase">CPU</th>
+                    <th class="px-stack-lg py-3 text-label-caps text-on-surface-variant uppercase text-right">Aksi</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
                 {% for vps in vps_list %}
-                    <tr class="vps-row" data-vps-name="{{ vps.name }}">
-                        <td>
-                            <span class="vps-name-link">{{ vps.name }}</span>
-                        </td>
-                        <td>
-                            <span class="status-text {% if 'Up' in vps.status %}up{% else %}exited{% endif %}">
-                                {{ vps.status }}
-                            </span>
-                        </td>
-                        <td>
-                            <div class="action-buttons">
-                                <form method="post" action="/toggle" class="action-form">
-                                    <input type="hidden" name="name" value="{{ vps.name }}">
-                                    <button type="submit" class="action-button button-io {% if 'Up' in vps.status %}warning{% else %}primary{% endif %}">
-                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                            <path d="M12 2V22M12 2C7.02944 2 3 6.02944 3 11V13C3 17.9706 7.02944 22 12 22C16.9706 22 21 17.9706 21 13V11C21 6.02944 16.9706 2 12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                        </svg>
-                                        I/O
-                                    </button>
-                                </form>
-
-                                <form method="post" action="/delete" class="action-form" onsubmit="return confirm('Yakin hapus VPS {{ vps.name }}?');">
-                                    <input type="hidden" name="name" value="{{ vps.name }}">
-                                    <button type="submit" class="action-button button-delete">
-                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                            <path d="M3 6H21M5 6V21C5 21.5304 5.21071 22.0391 5.58579 22.4142C5.96086 22.7893 6.46957 23 7 23H17C17.5304 23 18.0391 22.7893 18.4142 22.4142C18.7893 22.0391 19 21.5304 19 21V6M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6M10 11V18M14 11V18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                        </svg>
-                                        Delete
-                                    </button>
-                                </form>
-
-                                <form method="post" action="/edit" class="action-form">
-                                    <input type="hidden" name="name" value="{{ vps.name }}">
-                                    <input type="text" name="hostname" placeholder="Hostname" class="action-input" value="{{ vps.hostname or '' }}">
-                                    <input type="text" name="ram" placeholder="RAM" class="action-input" value="{{ vps.ram or '' }}">
-                                    <input type="text" name="cpu" placeholder="CPU" class="action-input" value="{{ vps.cpu or '' }}">
-                                    <input type="text" name="description" placeholder="Keterangan" class="action-input description" value="{{ vps.description or '' }}">
-                                    <button type="submit" class="action-button button-edit">
-                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                            <path d="M17 3L21 7L18.7915 9.20853C18.2323 9.76774 17.4871 10.0888 16.7118 10.0888C15.9366 10.0888 15.1914 9.76774 14.6321 9.20853L4 19.8407V23H7.15934L17.7915 12.3678C18.3508 11.8086 18.6718 11.0634 18.6718 10.2882C18.6718 9.51291 18.3508 8.76774 17.7915 8.20853L17 7L17 3Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                        </svg>
-                                        Edit
-                                    </button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr class="port-info-row" id="vps-info-{{ vps.name }}">
-                        <td colspan="3">
-                            <div>
-                                <p><strong>Hostname:</strong> <code>{{ vps.hostname }}</code></p>
-                                <p><strong>SSH Port:</strong> <code>{{ vps.ssh_port }}</code></p>
-                                <p><strong>Web Port:</strong> <code>{{ vps.web_port }}</code></p>
-                                <p><strong>RAM:</strong> <code>{{ vps.ram }}</code></p>
-                                <p><strong>CPU:</strong> <code>{{ vps.cpu }}</code></p>
-                                <p><strong>Image:</strong> <code>{{ vps.image }}</code></p>
-                                {% if vps.description %}
-                                <p><strong>Keterangan:</strong> <code>{{ vps.description }}</code></p>
-                                {% endif %}
-                            </div>
-                        </td>
-                    </tr>
+                <tr class="hover:bg-slate-50 transition-colors">
+                    <td class="px-stack-lg py-4">
+                        <div class="font-semibold text-body-sm text-on-surface">{{ vps.name }}</div>
+                        {% if vps.description %}
+                        <div class="text-body-sm text-on-surface-variant">{{ vps.description }}</div>
+                        {% endif %}
+                    </td>
+                    <td class="px-stack-lg py-4 text-body-sm text-on-surface-variant">{{ vps.hostname }}</td>
+                    <td class="px-stack-lg py-4">
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-label-caps 
+                            {% if 'Up' in vps.status %}
+                                bg-green-100 text-green-800
+                            {% else %}
+                                bg-red-100 text-red-800
+                            {% endif %}">
+                            <span class="h-1.5 w-1.5 rounded-full 
+                                {% if 'Up' in vps.status %}bg-green-600{% else %}bg-red-600{% endif %}"></span>
+                            {{ vps.status }}
+                        </span>
+                    </td>
+                    <td class="px-stack-lg py-4 font-code text-body-sm">{{ vps.ssh_port }}</td>
+                    <td class="px-stack-lg py-4 font-code text-body-sm">{{ vps.web_port }}</td>
+                    <td class="px-stack-lg py-4 text-body-sm">{{ vps.ram }}</td>
+                    <td class="px-stack-lg py-4 text-body-sm">{{ vps.cpu }}</td>
+                    <td class="px-stack-lg py-4">
+                        <div class="flex items-center justify-end gap-2">
+                            <!-- Toggle I/O Button -->
+                            <form method="post" action="/toggle" class="inline">
+                                <input type="hidden" name="name" value="{{ vps.name }}">
+                                <button type="submit" class="p-2 rounded-lg transition-colors
+                                    {% if 'Up' in vps.status %}
+                                        bg-amber-50 text-amber-600 hover:bg-amber-100
+                                    {% else %}
+                                        bg-green-50 text-green-600 hover:bg-green-100
+                                    {% endif %}">
+                                    <span class="material-symbols-outlined text-xl" data-icon="power_settings_new">power_settings_new</span>
+                                </button>
+                            </form>
+                            
+                            <!-- Edit Button (opens detail) -->
+                            <button onclick="toggleEdit('{{ vps.name }}')" class="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors">
+                                <span class="material-symbols-outlined text-xl" data-icon="edit">edit</span>
+                            </button>
+                            
+                            <!-- Delete Button -->
+                            <form method="post" action="/delete" class="inline" onsubmit="return confirm('Yakin hapus VPS {{ vps.name }}?');">
+                                <input type="hidden" name="name" value="{{ vps.name }}">
+                                <button type="submit" class="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors">
+                                    <span class="material-symbols-outlined text-xl" data-icon="delete">delete</span>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                <!-- Edit Row (Hidden by default) -->
+                <tr id="edit-{{ vps.name }}" class="hidden bg-slate-50/50">
+                    <td colspan="8" class="px-stack-lg py-4">
+                        <form method="post" action="/edit" class="flex flex-wrap items-center gap-3">
+                            <input type="hidden" name="name" value="{{ vps.name }}">
+                            <input type="text" name="hostname" placeholder="Hostname" class="px-3 py-2 border border-slate-200 rounded-lg text-body-sm" value="{{ vps.hostname or '' }}">
+                            <input type="text" name="ram" placeholder="RAM (e.g., 512m)" class="px-3 py-2 border border-slate-200 rounded-lg text-body-sm w-28" value="{{ vps.ram or '' }}">
+                            <input type="text" name="cpu" placeholder="CPU (e.g., 0.5)" class="px-3 py-2 border border-slate-200 rounded-lg text-body-sm w-24" value="{{ vps.cpu or '' }}">
+                            <input type="text" name="description" placeholder="Keterangan" class="px-3 py-2 border border-slate-200 rounded-lg text-body-sm flex-1" value="{{ vps.description or '' }}">
+                            <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-body-sm font-medium hover:bg-indigo-700 transition-colors">
+                                Save Changes
+                            </button>
+                            <button type="button" onclick="toggleEdit('{{ vps.name }}')" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-body-sm font-medium hover:bg-slate-300 transition-colors">
+                                Cancel
+                            </button>
+                        </form>
+                    </td>
+                </tr>
                 {% endfor %}
-                </tbody>
-            </table>
+            </tbody>
+        </table>
+        {% if not vps_list %}
+        <div class="p-8 text-center text-body-sm text-slate-500">
+            <span class="material-symbols-outlined text-4xl text-slate-300 mb-2">cloud_off</span>
+            <p>Belum ada VPS yang dibuat.</p>
+            <a href="/" class="text-indigo-600 hover:underline mt-2 inline-block">Buat VPS pertama Anda</a>
         </div>
+        {% endif %}
     </div>
+</div>
+{% endblock %}
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const vpsNameLinks = document.querySelectorAll('.vps-name-link');
+{% block scripts %}
+<script>
+function toggleEdit(vpsName) {
+    const editRow = document.getElementById('edit-' + vpsName);
+    if (editRow.classList.contains('hidden')) {
+        editRow.classList.remove('hidden');
+    } else {
+        editRow.classList.add('hidden');
+    }
+}
 
-            vpsNameLinks.forEach(link => {
-                link.addEventListener('click', function() {
-                    const row = this.closest('tr');
-                    const infoRow = row.nextElementSibling;
-
-                    if (infoRow && infoRow.classList.contains('port-info-row')) {
-                        if (infoRow.style.display === 'none' || infoRow.style.display === '') {
-                            infoRow.style.display = 'table-row';
-                        } else {
-                            infoRow.style.display = 'none';
-                        }
-                    }
-                });
-            });
-        });
-    </script>
-</body>
-</html>
+// Highlight active nav item
+document.addEventListener('DOMContentLoaded', function() {
+    const navManage = document.querySelector('.nav-manage');
+    const sidebarManage = document.querySelector('.sidebar-manage');
+    
+    if (navManage) {
+        navManage.classList.remove('text-slate-500', 'dark:text-slate-400');
+        navManage.classList.add('bg-indigo-50', 'dark:bg-indigo-900/20', 'text-indigo-700', 'dark:text-indigo-300', 'border-r-2', 'border-indigo-600');
+    }
+    if (sidebarManage) {
+        sidebarManage.classList.add('bg-indigo-50', 'dark:bg-indigo-900/20', 'text-indigo-700', 'dark:text-indigo-300', 'border-r-2', 'border-indigo-600');
+    }
+});
+</script>
+{% endblock %}

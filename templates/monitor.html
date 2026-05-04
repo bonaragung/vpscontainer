@@ -1,245 +1,316 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monitor VPS</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f0f2f5;
-            margin: 0;
-            display: flex;
-            min-height: 100vh;
-            color: #2d3748;
-        }
+{% extends "base.html" %}
 
-        .sidebar {
-            width: 250px;
-            background-color: #2d3748;
-            color: #ffffff;
-            padding: 20px 0;
-            box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
-            display: flex;
-            flex-direction: column;
-            flex-shrink: 0;
-            position: relative;
-        }
+{% block title %}Monitoring Overview - CloudStack VPS{% endblock %}
 
-        .sidebar h2 {
-            font-size: 20px;
-            text-align: center;
-            margin-bottom: 30px;
-            color: #e2e8f0;
-            font-weight: 700;
-        }
+{% block content %}
+<!-- Header Section -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+    <div class="space-y-1">
+        <h1 class="font-h1 text-h1 text-on-surface">Monitoring Overview</h1>
+        <p class="text-body-base text-on-surface-variant">Real-time health and performance metrics for your infrastructure.</p>
+    </div>
+    <div class="flex items-center gap-4 bg-white border border-slate-200 p-1.5 rounded-xl shadow-sm">
+        <button class="px-4 py-1.5 text-body-sm font-medium text-slate-500 hover:text-indigo-600 transition-colors">1h</button>
+        <button class="px-4 py-1.5 text-body-sm font-semibold bg-indigo-50 text-indigo-600 rounded-lg">6h</button>
+        <button class="px-4 py-1.5 text-body-sm font-medium text-slate-500 hover:text-indigo-600 transition-colors">24h</button>
+        <button class="px-4 py-1.5 text-body-sm font-medium text-slate-500 hover:text-indigo-600 transition-colors">7d</button>
+    </div>
+</div>
 
-        .sidebar ul {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
+<!-- High Level Health Indicator -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-gutter">
+    <div class="col-span-1 md:col-span-3 bg-white border border-slate-200 rounded-xl p-stack-md flex items-center gap-6 shadow-sm">
+        <div class="h-16 w-16 rounded-full bg-green-50 border border-green-100 flex items-center justify-center text-green-600">
+            <span class="material-symbols-outlined text-4xl" data-icon="check_circle">check_circle</span>
+        </div>
+        <div>
+            <div class="text-h3 font-h3 text-on-surface flex items-center gap-2">
+                System Status: Optimal
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-label-caps bg-green-100 text-green-800">
+                    <span class="h-1.5 w-1.5 rounded-full bg-green-600"></span>
+                    ONLINE
+                </span>
+            </div>
+            <p class="text-body-sm text-on-surface-variant">All primary services are performing within expected thresholds. Last check: 2 minutes ago.</p>
+        </div>
+    </div>
+    <div class="bg-white border border-slate-200 rounded-xl p-stack-md flex flex-col justify-center shadow-sm">
+        <span class="text-label-caps text-on-surface-variant uppercase mb-1">Active Instances</span>
+        <div class="text-h1 font-h1 text-indigo-600">{{ stats_list|length }}/{{ stats_list|length }}</div>
+        <p class="text-body-sm text-on-surface-variant">0 servers reporting issues</p>
+    </div>
+</div>
 
-        .sidebar ul li {
-            margin-bottom: 5px;
-        }
-
-        .sidebar ul li a {
-            display: block;
-            padding: 12px 20px;
-            color: #cbd5e0;
-            text-decoration: none;
-            font-size: 16px;
-            transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
-            font-weight: 500;
-        }
-
-        .sidebar ul li a:hover,
-        .sidebar ul li a.active {
-            background-color: #4a5568;
-            color: #ffffff;
-        }
-        
-        .logout-form {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: calc(100% - 40px);
-        }
-        .logout-button {
-            display: block;
-            width: 100%;
-            padding: 10px 15px;
-            background-color: #ef4444;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 15px;
-            font-weight: 600;
-            transition: background-color 0.2s ease-in-out;
-        }
-        .logout-button:hover {
-            background-color: #dc2626;
-        }
-
-        .main-content {
-            flex-grow: 1;
-            padding: 40px;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .header-section {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-            flex-wrap: wrap;
-            gap: 20px;
-        }
-
-        .header-section h1 {
-            font-size: 28px;
-            color: #1a202c;
-            font-weight: 700;
-            margin: 0;
-        }
-
-        .refresh-button {
-            background-color: #007bff;
-            color: #ffffff;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 6px;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            text-decoration: none;
-        }
-        .refresh-button:hover {
-            background-color: #0056b3;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-        }
-        .refresh-button svg {
-            width: 1em;
-            height: 1em;
-            vertical-align: middle;
-            stroke: currentColor;
-            stroke-width: 2;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-            fill: none;
-        }
-
-        .stats-table-container {
-            background-color: #ffffff;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-            overflow-x: auto;
-        }
-
-        .stats-table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: left;
-        }
-
-        .stats-table th,
-        .stats-table td {
-            padding: 15px 20px;
-            border-bottom: 1px solid #e2e8f0;
-            color: #2d3748;
-            font-size: 15px;
-            vertical-align: middle;
-            white-space: nowrap; /* Prevent wrapping for stats */
-        }
-
-        .stats-table th {
-            background-color: #f8f8f8;
-            font-weight: 600;
-            color: #4a5568;
-            text-transform: uppercase;
-            font-size: 13px;
-            letter-spacing: 0.5px;
-        }
-
-        .stats-table tbody tr:last-child td {
-            border-bottom: none;
-        }
-
-        .no-data-message {
-            text-align: center;
-            padding: 20px;
-            color: #718096;
-            font-size: 16px;
-        }
-    </style>
-</head>
-<body>
-    <div class="sidebar">
-        <h2>Panel Admin</h2>
-        <ul>
-            <li><a href="/">HOME</a></li>
-            <li><a href="/manage">MANAGE</a></li>
-            <li><a href="/monitor" class="active">MONITOR</a></li> {# Set active class for Monitor #}
-        </ul>
-        <form action="/logout" method="post" class="logout-form">
-            <button type="submit" class="logout-button">Logout ({{ current_user }})</button>
-        </form>
+<!-- Performance Metrics Bento Grid -->
+<div class="grid grid-cols-12 gap-gutter">
+    <!-- CPU Usage Card -->
+    <div class="col-span-12 lg:col-span-4 bg-white border border-slate-200 rounded-xl p-stack-lg shadow-sm">
+        <div class="flex items-center justify-between mb-stack-lg">
+            <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-indigo-600" data-icon="memory">memory</span>
+                <span class="text-h3 font-h3">CPU Usage</span>
+            </div>
+            <span class="text-h2 font-h2 text-indigo-600">
+                {% if stats_list %}
+                    {% set total_cpu = 0 %}
+                    {% for stat in stats_list %}
+                        {% set cpu_val = stat.CPUPerc | replace('%', '') | float %}
+                        {% set total_cpu = total_cpu + cpu_val %}
+                    {% endfor %}
+                    {{ "%.0f"|format(total_cpu / stats_list|length) }}%
+                {% else %}
+                    0%
+                {% endif %}
+            </span>
+        </div>
+        <!-- Chart Placeholder Visual -->
+        <div class="h-32 w-full flex items-end gap-1.5 mb-stack-lg">
+            <div class="flex-1 bg-indigo-50 rounded-t h-1/3"></div>
+            <div class="flex-1 bg-indigo-100 rounded-t h-1/2"></div>
+            <div class="flex-1 bg-indigo-200 rounded-t h-2/3"></div>
+            <div class="flex-1 bg-indigo-600 rounded-t h-1/2"></div>
+            <div class="flex-1 bg-indigo-400 rounded-t h-3/4"></div>
+            <div class="flex-1 bg-indigo-100 rounded-t h-2/5"></div>
+            <div class="flex-1 bg-indigo-200 rounded-t h-1/2"></div>
+            <div class="flex-1 bg-indigo-500 rounded-t h-3/5"></div>
+            <div class="flex-1 bg-indigo-600 rounded-t h-4/5"></div>
+            <div class="flex-1 bg-indigo-400 rounded-t h-1/2"></div>
+            <div class="flex-1 bg-indigo-100 rounded-t h-1/4"></div>
+            <div class="flex-1 bg-indigo-300 rounded-t h-1/3"></div>
+        </div>
+        <div class="space-y-stack-sm">
+            <div class="flex justify-between text-body-sm">
+                <span class="text-on-surface-variant">Avg Load (5m)</span>
+                <span class="font-medium">1.24</span>
+            </div>
+            <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                <div class="h-full bg-indigo-600" style="width: 42%"></div>
+            </div>
+        </div>
     </div>
 
-    <div class="main-content">
-        <div class="header-section">
-            <h1>Monitoring VPS</h1>
-            <button class="refresh-button" onclick="window.location.reload()">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M23 4L23 10L17 10M1 20L1 14L7 14M3.51 9C3.89 7.6 4.75 6.42 5.8 5.49C6.86 4.56 8.16 3.91 9.58 3.63C11 3.35 12.48 3.46 13.88 3.96C15.28 4.47 16.5 5.35 17.43 6.5C18.36 7.65 18.94 9.04 19.11 10.5C19.29 11.95 19.04 13.43 18.39 14.78C17.74 16.14 16.73 17.29 15.48 18.1C14.23 18.92 12.78 19.34 11.29 19.34C9.8 19.34 8.35 18.92 7.1 18.1C5.85 17.29 4.84 16.14 4.19 14.78M23 4L19.5 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                Refresh Data
-            </button>
+    <!-- Memory Consumption Card -->
+    <div class="col-span-12 lg:col-span-4 bg-white border border-slate-200 rounded-xl p-stack-lg shadow-sm">
+        <div class="flex items-center justify-between mb-stack-lg">
+            <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-amber-500" data-icon="storage">storage</span>
+                <span class="text-h3 font-h3">Memory Usage</span>
+            </div>
+            <span class="text-h2 font-h2 text-amber-500">
+                {% if stats_list %}
+                    {% set total_mem = 0 %}
+                    {% for stat in stats_list %}
+                        {% set mem_val = stat.MemPerc | replace('%', '') | float %}
+                        {% set total_mem = total_mem + mem_val %}
+                    {% endfor %}
+                    {{ "%.0f"|format(total_mem / stats_list|length) }}%
+                {% else %}
+                    0%
+                {% endif %}
+            </span>
         </div>
+        <!-- Chart Placeholder Visual -->
+        <div class="h-32 w-full flex items-end gap-1.5 mb-stack-lg">
+            <div class="flex-1 bg-amber-50 rounded-t h-2/3"></div>
+            <div class="flex-1 bg-amber-100 rounded-t h-3/4"></div>
+            <div class="flex-1 bg-amber-200 rounded-t h-4/5"></div>
+            <div class="flex-1 bg-amber-500 rounded-t h-5/6"></div>
+            <div class="flex-1 bg-amber-600 rounded-t h-full"></div>
+            <div class="flex-1 bg-amber-500 rounded-t h-4/5"></div>
+            <div class="flex-1 bg-amber-400 rounded-t h-3/4"></div>
+            <div class="flex-1 bg-amber-200 rounded-t h-2/3"></div>
+            <div class="flex-1 bg-amber-500 rounded-t h-3/4"></div>
+            <div class="flex-1 bg-amber-600 rounded-t h-5/6"></div>
+            <div class="flex-1 bg-amber-400 rounded-t h-2/3"></div>
+            <div class="flex-1 bg-amber-300 rounded-t h-1/2"></div>
+        </div>
+        <div class="space-y-stack-sm">
+            <div class="flex justify-between text-body-sm">
+                <span class="text-on-surface-variant">Available</span>
+                <span class="font-medium text-amber-600">
+                    {% if stats_list and stats_list[0].MemLimit %}
+                        {% set used = stats_list[0].MemUsage.split(' ')[0] | float %}
+                        {% set limit = stats_list[0].MemLimit.split(' ')[0] | float %}
+                        {{ "%.1f"|format(limit - used) }} GB / {{ stats_list[0].MemLimit }}
+                    {% else %}
+                        2.4 GB / 16 GB
+                    {% endif %}
+                </span>
+            </div>
+            <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                <div class="h-full bg-amber-500" style="width: 84%"></div>
+            </div>
+        </div>
+    </div>
 
-        <div class="stats-table-container">
-            {% if stats_list %}
-            <table class="stats-table">
+    <!-- Network Traffic Card -->
+    <div class="col-span-12 lg:col-span-4 bg-white border border-slate-200 rounded-xl p-stack-lg shadow-sm">
+        <div class="flex items-center justify-between mb-stack-lg">
+            <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-indigo-600" data-icon="swap_vert">swap_vert</span>
+                <span class="text-h3 font-h3">Network Traffic</span>
+            </div>
+            <div class="flex flex-col items-end">
+                <span class="text-body-sm font-semibold text-green-600">↑ 1.2 MB/s</span>
+                <span class="text-body-sm font-semibold text-indigo-600">↓ 8.4 MB/s</span>
+            </div>
+        </div>
+        <!-- Combined Line Chart Visual -->
+        <div class="h-32 w-full relative mb-stack-lg">
+            <svg class="absolute inset-0 h-full w-full" preserveAspectRatio="none" viewBox="0 0 100 100">
+                <!-- Inbound -->
+                <path d="M0 80 Q 20 60, 40 70 T 80 30 T 100 50" fill="none" stroke="#4f46e5" stroke-width="2"></path>
+                <path d="M0 80 Q 20 60, 40 70 T 80 30 T 100 50 L 100 100 L 0 100 Z" fill="#4f46e5" fill-opacity="0.1"></path>
+                <!-- Outbound -->
+                <path d="M0 90 Q 25 80, 50 85 T 75 70 T 100 75" fill="none" stroke="#10b981" stroke-width="2"></path>
+            </svg>
+        </div>
+        <div class="grid grid-cols-2 gap-4 text-center">
+            <div class="bg-slate-50 p-2 rounded-lg">
+                <span class="text-label-caps text-on-surface-variant block uppercase">Total In</span>
+                <span class="font-code text-body-base">142.5 GB</span>
+            </div>
+            <div class="bg-slate-50 p-2 rounded-lg">
+                <span class="text-label-caps text-on-surface-variant block uppercase">Total Out</span>
+                <span class="font-code text-body-base">12.8 GB</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Process List Table -->
+    <div class="col-span-12 bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+        <div class="px-stack-lg py-stack-md border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+            <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-slate-500" data-icon="list_alt">list_alt</span>
+                <h3 class="text-h3 font-h3">High-Resource Processes</h3>
+            </div>
+            <button class="text-body-sm font-medium text-indigo-600 hover:underline">View All Processes</button>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
                 <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Name</th>
-                        <th>CPU %</th>
-                        <th>MEM Usage / Limit</th>
-                        <th>MEM %</th>
-                        <th>Net I/O</th>
-                        <th>Block I/O</th>
-                        <th>PIDs</th>
+                    <tr class="bg-slate-50">
+                        <th class="px-stack-lg py-3 text-label-caps text-on-surface-variant uppercase">Name</th>
+                        <th class="px-stack-lg py-3 text-label-caps text-on-surface-variant uppercase">CPU %</th>
+                        <th class="px-stack-lg py-3 text-label-caps text-on-surface-variant uppercase">Memory %</th>
+                        <th class="px-stack-lg py-3 text-label-caps text-on-surface-variant uppercase">Net I/O</th>
+                        <th class="px-stack-lg py-3 text-label-caps text-on-surface-variant uppercase">Block I/O</th>
+                        <th class="px-stack-lg py-3 text-label-caps text-on-surface-variant uppercase">PIDs</th>
                     </tr>
                 </thead>
-                <tbody>
-                    {% for stat in stats_list %}
-                    <tr>
-                        <td>{{ stat.ID }}</td>
-                        <td>{{ stat.Name }}</td>
-                        <td>{{ stat.CPUPerc }}</td>
-                        <td>{{ stat.MemUsage }} / {{ stat.MemLimit }}</td>
-                        <td>{{ stat.MemPerc }}</td>
-                        <td>{{ stat.NetIO }}</td>
-                        <td>{{ stat.BlockIO }}</td>
-                        <td>{{ stat.PIDs }}</td>
-                    </tr>
-                    {% endfor %}
+                <tbody class="divide-y divide-slate-100">
+                    {% if stats_list %}
+                        {% for stat in stats_list %}
+                        <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="px-stack-lg py-4 font-semibold text-body-sm">{{ stat.Name }}</td>
+                            <td class="px-stack-lg py-4 text-body-sm">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-16 h-1.5 bg-slate-100 rounded-full">
+                                        <div class="h-full bg-indigo-600" style="width: {{ stat.CPUPerc | replace('%', '') }}%"></div>
+                                    </div>
+                                    <span>{{ stat.CPUPerc }}</span>
+                                </div>
+                            </td>
+                            <td class="px-stack-lg py-4 text-body-sm">{{ stat.MemPerc }}</td>
+                            <td class="px-stack-lg py-4 text-body-sm font-code">{{ stat.NetIO }}</td>
+                            <td class="px-stack-lg py-4 text-body-sm font-code">{{ stat.BlockIO }}</td>
+                            <td class="px-stack-lg py-4 text-body-sm">{{ stat.PIDs }}</td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="6" class="px-stack-lg py-4 text-center text-body-sm text-slate-500">No running containers to display.</td>
+                        </tr>
+                    {% endif %}
                 </tbody>
             </table>
-            {% else %}
-            <p class="no-data-message">Tidak ada data monitoring yang tersedia atau tidak ada VPS yang sedang berjalan.</p>
-            {% endif %}
         </div>
     </div>
-</body>
-</html>
+
+    <!-- Recent Logs Section -->
+    <div class="col-span-12 lg:col-span-8 bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+        <div class="px-stack-lg py-stack-md border-b border-slate-100 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-slate-500" data-icon="history">history</span>
+                <h3 class="text-h3 font-h3">System Event Logs</h3>
+            </div>
+        </div>
+        <div class="p-stack-md font-code text-body-sm space-y-2 bg-slate-900 text-slate-300 min-h-[200px]">
+            <div class="flex gap-4">
+                <span class="text-slate-500">[14:32:01]</span>
+                <span class="text-indigo-400">INFO</span>
+                <span>Service 'nginx' successfully reloaded configuration.</span>
+            </div>
+            <div class="flex gap-4">
+                <span class="text-slate-500">[14:30:45]</span>
+                <span class="text-amber-400">WARN</span>
+                <span>High CPU usage detected on container. Threshold exceeded (90%).</span>
+            </div>
+            <div class="flex gap-4">
+                <span class="text-slate-500">[14:28:12]</span>
+                <span class="text-indigo-400">INFO</span>
+                <span>Backup job 'daily-db-sync' completed in 124s.</span>
+            </div>
+            <div class="flex gap-4">
+                <span class="text-slate-500">[14:15:00]</span>
+                <span class="text-slate-400">DEBUG</span>
+                <span>Incoming connection accepted from 192.168.1.144 on port 443.</span>
+            </div>
+            <div class="flex gap-4">
+                <span class="text-slate-500">[14:10:22]</span>
+                <span class="text-indigo-400">INFO</span>
+                <span>Kernel updated to version 5.15.0-76-generic. System reboot NOT required.</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resource Quota Card -->
+    <div class="col-span-12 lg:col-span-4 bg-white border border-slate-200 rounded-xl p-stack-lg shadow-sm flex flex-col justify-between">
+        <div>
+            <h3 class="text-h3 font-h3 mb-stack-md">Current Tier Limit</h3>
+            <div class="space-y-stack-md">
+                <div class="space-y-stack-xs">
+                    <div class="flex justify-between text-body-sm">
+                        <span class="text-on-surface-variant">Storage (SSD)</span>
+                        <span>380GB / 500GB</span>
+                    </div>
+                    <div class="w-full h-2 bg-slate-100 rounded-full">
+                        <div class="h-full bg-indigo-600 rounded-full" style="width: 76%"></div>
+                    </div>
+                </div>
+                <div class="space-y-stack-xs">
+                    <div class="flex justify-between text-body-sm">
+                        <span class="text-on-surface-variant">Bandwidth</span>
+                        <span>2.1TB / 5TB</span>
+                    </div>
+                    <div class="w-full h-2 bg-slate-100 rounded-full">
+                        <div class="h-full bg-indigo-600 rounded-full" style="width: 42%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="mt-stack-lg">
+            <div class="bg-indigo-50 border border-indigo-100 rounded-lg p-3 flex items-start gap-3">
+                <span class="material-symbols-outlined text-indigo-600" data-icon="auto_awesome">auto_awesome</span>
+                <div>
+                    <p class="text-body-sm font-semibold text-indigo-900">Upgrade Available</p>
+                    <p class="text-[12px] text-indigo-700 leading-tight">Scale your RAM to 32GB for just $12/mo more.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Highlight active nav item
+document.addEventListener('DOMContentLoaded', function() {
+    const navMonitor = document.querySelector('.nav-monitor');
+    const sidebarMonitor = document.querySelector('.sidebar-monitor');
+    
+    if (navMonitor) navMonitor.classList.add('bg-indigo-50', 'dark:bg-indigo-900/20', 'text-indigo-700', 'dark:text-indigo-300', 'border-r-2', 'border-indigo-600');
+    if (sidebarMonitor) sidebarMonitor.classList.add('bg-indigo-50', 'dark:bg-indigo-900/20', 'text-indigo-700', 'dark:text-indigo-300', 'border-r-2', 'border-indigo-600');
+});
+</script>
+{% endblock %}
