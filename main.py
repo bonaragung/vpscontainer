@@ -1,25 +1,34 @@
 from fastapi import FastAPI, Request, Form, Depends, HTTPException, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
-from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from starlette.middleware.sessions import SessionMiddleware
 import subprocess
 import re
 import json
-from passlib.context import CryptContext
+import bcrypt
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
 app.add_middleware(SessionMiddleware, secret_key="super-secret-key-yang-sangat-rahasia-dan-panjang") # Ganti secret key!
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Use bcrypt directly
+def hash_password(password):
+    password_bytes = password.encode('utf-8')
+    # bcrypt has 72 bytes limit, truncate if necessary
+    if len(password_bytes) > 72:
+        password_bytes = password_bytes[:72]
+    return bcrypt.hashpw(password_bytes, bcrypt.gensalt()).decode('utf-8')
+
+def verify_password(plain_password, hashed_password):
+    plain_bytes = plain_password.encode('utf-8')
+    if len(plain_bytes) > 72:
+        plain_bytes = plain_bytes[:72]
+    return bcrypt.checkpw(plain_bytes, hashed_password.encode('utf-8'))
 
 USERS = {
-    "admin": pwd_context.hash("admin123"), # Ganti 'admin123' dengan password Anda
+    "admin": hash_password("admin123"), # Ganti 'admin123' dengan password Anda
 }
-
-security = HTTPBasic()
 
 DEFAULT_RAM = "512m"
 DEFAULT_CPU = "0.5"
@@ -37,9 +46,6 @@ DESCRIPTION_LABEL = "com.myvpsapp.description"
 IMAGE_LABEL = "com.myvpsapp.image"
 
 # --- Fungsi Utility ---
-def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
-
 def get_available_ports():
     result = subprocess.run(
         ["docker", "ps", "--format", "{{.Ports}}"],
@@ -187,12 +193,12 @@ def get_current_user(request: Request):
 async def login_get(request: Request):
     if "username" in request.session:
         return RedirectResponse("/", status_code=303)
-    return templates.TemplateResponse("login.html", {"request": request, "error_message": None})
+    return templates.TemplateResponse(request, "login.html", {"error_message": None})
 
 @app.post("/login", response_class=HTMLResponse)
 async def login_post(request: Request, username: str = Form(...), password: str = Form(...)):
     if username not in USERS or not verify_password(password, USERS[username]):
-        return templates.TemplateResponse("login.html", {"request": request, "error_message": "Username atau password salah."})
+        return templates.TemplateResponse(request, "login.html", {"error_message": "Username atau password salah."})
     
     request.session["username"] = username
     return RedirectResponse("/", status_code=303)
@@ -204,7 +210,7 @@ async def logout(request: Request):
 
 @app.get("/", response_class=HTMLResponse)
 async def form_get(request: Request, current_user: str = Depends(get_current_user)):
-    return templates.TemplateResponse("form.html", {
+    return templates.TemplateResponse(request, "form.html", {
         "request": request,
         "current_user": current_user,
         "available_images": AVAILABLE_IMAGES,
@@ -224,7 +230,7 @@ async def form_post(
     current_user: str = Depends(get_current_user)
 ):
     if image not in AVAILABLE_IMAGES:
-        return templates.TemplateResponse("form.html", {
+        return templates.TemplateResponse(request, "form.html", {
             "request": request,
             "error": True,
             "stderr": f"Image '{image}' tidak valid.",
@@ -264,7 +270,7 @@ async def form_post(
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, check=True)
         container_id = result.stdout.strip()
-        return templates.TemplateResponse("form.html", {
+        return templates.TemplateResponse(request, "form.html", {
             "request": request,
             "success": True,
             "name": name,
@@ -282,7 +288,7 @@ async def form_post(
             "default_image": DEFAULT_IMAGE
         })
     except subprocess.CalledProcessError as e:
-        return templates.TemplateResponse("form.html", {
+        return templates.TemplateResponse(request, "form.html", {
             "request": request,
             "error": True,
             "stderr": e.stderr,
@@ -294,7 +300,7 @@ async def form_post(
 @app.get("/manage", response_class=HTMLResponse)
 async def manage_vps(request: Request, current_user: str = Depends(get_current_user)):
     vps_list = list_vps()
-    return templates.TemplateResponse("manage.html", {"request": request, "vps_list": vps_list, "current_user": current_user})
+    return templates.TemplateResponse(request, "manage.html", {"vps_list": vps_list, "current_user": current_user})
 
 # Endpoint baru untuk Monitoring
 @app.get("/monitor", response_class=HTMLResponse)
@@ -331,7 +337,7 @@ async def monitor_vps(request: Request, current_user: str = Depends(get_current_
         if stat.get('Name') in managed_vps_names:
             final_stats.append(stat)
 
-    return templates.TemplateResponse("monitor.html", {
+    return templates.TemplateResponse(request, "monitor.html", {
         "request": request,
         "stats_list": final_stats, # Kirim data stats ke template
         "current_user": current_user
