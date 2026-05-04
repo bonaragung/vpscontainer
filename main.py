@@ -1,7 +1,8 @@
 from fastapi import FastAPI, Request, Form, Depends, HTTPException, status
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
+from datetime import datetime
 import subprocess
 import re
 import json
@@ -449,3 +450,68 @@ async def edit_vps(
 
     subprocess.run(cmd)
     return RedirectResponse("/manage", status_code=303)
+
+# API Endpoints for real-time monitoring
+@app.get("/api/stats")
+async def api_stats(current_user: str = Depends(get_current_user)):
+    """Return Docker stats as JSON for AJAX updates"""
+    stats = get_docker_stats()
+    # Filter only managed containers
+    managed_vps_names = {vps['name'] for vps in list_vps()}
+    filtered_stats = [stat for stat in stats if stat.get('Name') in managed_vps_names]
+    
+    # Calculate summary stats
+    total_cpu = 0
+    total_mem = 0
+    count = len(filtered_stats)
+    
+    for stat in filtered_stats:
+        cpu_val = float(stat.get('CPUPerc', '0%').replace('%', ''))
+        mem_val = float(stat.get('MemPerc', '0%').replace('%', ''))
+        total_cpu += cpu_val
+        total_mem += mem_val
+    
+    avg_cpu = round(total_cpu / count, 1) if count > 0 else 0
+    avg_mem = round(total_mem / count, 1) if count > 0 else 0
+    
+    return JSONResponse(content={
+        "stats": filtered_stats,
+        "summary": {
+            "avg_cpu": avg_cpu,
+            "avg_mem": avg_mem,
+            "container_count": count
+        },
+        "timestamp": datetime.now().isoformat()
+    })
+
+@app.get("/api/logs")
+async def api_logs(current_user: str = Depends(get_current_user), limit: int = 50):
+    """Return system logs as JSON"""
+    logs = []
+    
+    # Get logs from all managed containers
+    vps_list = list_vps()
+    for vps in vps_list:
+        if 'Up' in vps.get('status', ''):
+            try:
+                result = subprocess.run(
+                    ["docker", "logs", "--tail", str(limit), vps['name']],
+                    capture_output=True, text=True
+                )
+                # Parse logs (simplified - assumes timestamp format)
+                lines = result.stdout.strip().split('\n')
+                for line in lines[:limit]:
+                    if line.strip():
+                        logs.append({
+                            "container": vps['name'],
+                            "message": line.strip(),
+                            "level": "INFO"  # Simplified
+                        })
+            except:
+                pass
+    
+    # Sort by timestamp if possible, limit total
+    return JSONResponse(content={
+        "logs": logs[:limit],
+        "timestamp": datetime.now().isoformat()
+    })
