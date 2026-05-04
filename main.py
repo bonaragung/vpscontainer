@@ -35,11 +35,11 @@ DEFAULT_RAM = "512m"
 DEFAULT_CPU = "0.5"
 DEFAULT_STORAGE = "10G"
 AVAILABLE_IMAGES = [
-    "vps-image",
-    "vps-ubuntu",
-    "vps-debian",
-    "vps-fedora",
-    "vps-kali"
+    "nginx",
+    "alpine",
+    "ubuntu",
+    "debian",
+    "fedora"
 ]
 DEFAULT_IMAGE = AVAILABLE_IMAGES[0]
 
@@ -157,24 +157,31 @@ def list_vps():
     return vps_list
 
 def get_docker_stats():
-    """Mengambil statistik Docker dari semua kontainer yang berjalan."""
+    """Mengambil statistik Docker dari kontainer yang kita kelola saja."""
     stats_list = []
     try:
-        # Jalankan docker stats --no-stream --format json
-        # Ini akan memberikan satu snapshot data dalam format JSON
-        cmd = ["docker", "stats", "--no-stream", "--format", "{{json .}}"]
-        process = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        # Get list of managed containers (with our label)
+        managed_vps = list_vps()
+        managed_names = [vps['name'] for vps in managed_vps]
         
-        # Setiap baris output adalah objek JSON terpisah
+        if not managed_names:
+            return stats_list
+        
+        # Get stats only for managed containers
+        cmd = ["docker", "stats", "--no-stream", "--format", "{{json .}}"] + managed_names
+        process = subprocess.run(cmd, capture_output=True, text=True, check=False)
+        
         for line in process.stdout.strip().split('\n'):
             if line:
                 try:
                     stats_data = json.loads(line)
-                    stats_list.append(stats_data)
+                    # Only add if container is in our managed list
+                    if stats_data.get('Name') in managed_names:
+                        stats_list.append(stats_data)
                 except json.JSONDecodeError as e:
                     print(f"Error decoding JSON line: {e} - Line: {line}")
-    except subprocess.CalledProcessError as e:
-        print(f"Error running docker stats: {e.stderr}")
+    except Exception as e:
+        print(f"Error running docker stats: {e}")
     return stats_list
 
 
@@ -307,35 +314,13 @@ async def manage_vps(request: Request, current_user: str = Depends(get_current_u
 @app.get("/monitor", response_class=HTMLResponse)
 async def monitor_vps(request: Request, current_user: str = Depends(get_current_user)):
     stats_data = get_docker_stats()
-    # Filter stats data agar hanya menampilkan kontainer yang kita kelola
-    # Yaitu, kontainer yang imagenya ada di AVAILABLE_IMAGES
-    filtered_stats = []
-    for stat in stats_data:
-        # Coba ambil image yang digunakan dari 'Image' field di docker stats
-        # Jika tidak ada, fallback ke IMAGE_LABEL jika kita bisa melakukan inspect dari sini
-        # Untuk kesederhanaan, kita bisa mengecek Image ID atau Name jika itu cocok dengan image yang kita kelola
-        # Namun, cara paling akurat adalah dengan membandingkan nama image yang digunakan di docker stats
-        # dengan daftar AVAILABLE_IMAGES.
-        # Catatan: docker stats --format json tidak selalu memberikan 'Image' dengan nama lengkap
-        # Terkadang hanya ID atau SHA. Perlu disesuaikan jika ingin lebih akurat.
-        # Untuk demo ini, kita akan asumsikan 'Image' field cukup akurat.
-        image_name_from_stat = stat.get('Image', '')
-        if any(img_prefix in image_name_from_stat for img_prefix in AVAILABLE_IMAGES):
-            # Coba ambil nama kontainer dari `Name` atau `ID`
-            container_name = stat.get('Name', stat.get('ID', 'N/A'))
-            # Cek apakah nama kontainer ini ada di daftar VPS yang kita kelola (melalui list_vps)
-            # Ini mungkin terlalu kompleks, jadi kita akan tampilkan semua kontainer yang di-stats oleh Docker.
-            # Jika Anda ingin hanya yang dikelola aplikasi ini, Anda perlu mendapatkan daftar nama kontainer dari list_vps
-            # terlebih dahulu dan memfilter berdasarkan nama.
-            filtered_stats.append(stat)
-
-    # Sebagai alternatif yang lebih sederhana, kita bisa mendapatkan semua nama VPS yang dikelola,
-    # lalu memfilter docker stats berdasarkan nama tersebut.
-    managed_vps_names = {vps['name'] for vps in list_vps()}
+    # Filter stats berdasarkan nama kontainer yang kita kelola
+    managed_vps = list_vps()
+    managed_names = {vps['name'] for vps in managed_vps}
     
     final_stats = []
     for stat in stats_data:
-        if stat.get('Name') in managed_vps_names:
+        if stat.get('Name') in managed_names:
             final_stats.append(stat)
 
     return templates.TemplateResponse(request, "monitor.html", {
