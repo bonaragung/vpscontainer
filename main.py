@@ -35,11 +35,11 @@ DEFAULT_RAM = "512m"
 DEFAULT_CPU = "0.5"
 DEFAULT_STORAGE = "10G"
 AVAILABLE_IMAGES = [
-    "nginx",
+    "kali-kali",    # Local image (kali-linux)
+    "nginx",       # Public fallback
     "alpine",
     "ubuntu",
-    "debian",
-    "fedora"
+    "debian"
 ]
 DEFAULT_IMAGE = AVAILABLE_IMAGES[0]
 
