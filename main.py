@@ -7,6 +7,8 @@ import subprocess
 import re
 import json
 import bcrypt
+import secrets
+import string
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
@@ -26,6 +28,11 @@ def verify_password(plain_password, hashed_password):
     if len(plain_bytes) > 72:
         plain_bytes = plain_bytes[:72]
     return bcrypt.checkpw(plain_bytes, hashed_password.encode('utf-8'))
+
+def generate_random_password(length=12):
+    """Generate random password for SSH access"""
+    chars = string.ascii_letters + string.digits + "!@#$%"
+    return ''.join(secrets.choice(chars) for _ in range(length))
 
 USERS = {
     "admin": hash_password("admin123"), # Ganti 'admin123' dengan password Anda
@@ -252,6 +259,11 @@ async def form_post(
     ssh_port = find_next_port(used_ports)
     used_ports.add(ssh_port)
     web_port = find_next_port(used_ports)
+    used_ports.add(web_port)
+    
+    # Generate SSH credentials
+    ssh_username = "root"
+    ssh_password = generate_random_password(12)
     
     cmd = [
         "docker", "run", "-d",
@@ -285,6 +297,8 @@ async def form_post(
             "hostname": hostname,
             "ssh_port": ssh_port,
             "web_port": web_port,
+            "ssh_username": ssh_username,
+            "ssh_password": ssh_password,
             "ram": ram,
             "cpu": cpu,
             "storage": storage,
@@ -499,4 +513,31 @@ async def api_logs(current_user: str = Depends(get_current_user), limit: int = 5
     return JSONResponse(content={
         "logs": logs[:limit],
         "timestamp": datetime.now().isoformat()
+    })
+
+@app.get("/images", response_class=HTMLResponse)
+async def list_images(request: Request, current_user: str = Depends(get_current_user)):
+    """Display list of available Docker images"""
+    local_images = []
+    try:
+        result = subprocess.run(
+            ["docker", "images", "--format", "{{.Repository}}:{{.Tag}}"],
+            capture_output=True, text=True
+        )
+        # Parse each line, handle cases where Tag is <none>
+        for line in result.stdout.strip().split('\n'):
+            line = line.strip()
+            if line and line != '<none>:<none>':
+                # Extract just the image name (add :latest if no tag)
+                if ':' not in line:
+                    line = line + ':latest'
+                local_images.append(line)
+    except:
+        pass
+    
+    return templates.TemplateResponse(request, "images.html", {
+        "request": request,
+        "available_images": AVAILABLE_IMAGES,
+        "local_images": local_images,
+        "current_user": current_user
     })

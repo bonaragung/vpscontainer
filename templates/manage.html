@@ -32,8 +32,7 @@
                     <th class="px-stack-lg py-3 text-label-caps text-on-surface-variant uppercase">Nama</th>
                     <th class="px-stack-lg py-3 text-label-caps text-on-surface-variant uppercase">Hostname</th>
                     <th class="px-stack-lg py-3 text-label-caps text-on-surface-variant uppercase">Status</th>
-                    <th class="px-stack-lg py-3 text-label-caps text-on-surface-variant uppercase">SSH Port</th>
-                    <th class="px-stack-lg py-3 text-label-caps text-on-surface-variant uppercase">Web Port</th>
+                    <th class="px-stack-lg py-3 text-label-caps text-on-surface-variant uppercase">Connection</th>
                     <th class="px-stack-lg py-3 text-label-caps text-on-surface-variant uppercase">RAM</th>
                     <th class="px-stack-lg py-3 text-label-caps text-on-surface-variant uppercase">CPU</th>
                     <th class="px-stack-lg py-3 text-label-caps text-on-surface-variant uppercase text-right">Aksi</th>
@@ -61,8 +60,20 @@
                             {{ vps.status }}
                         </span>
                     </td>
-                    <td class="px-stack-lg py-4 font-code text-body-sm">{{ vps.ssh_port }}</td>
-                    <td class="px-stack-lg py-4 font-code text-body-sm">{{ vps.web_port }}</td>
+                    <td class="px-stack-lg py-4">
+                        <div class="text-xs space-y-1">
+                            <div>
+                                <span class="text-on-surface-variant">SSH:</span>
+                                <code class="bg-slate-100 px-1 rounded text-xs">{{ vps.ssh_port }}</code>
+                            </div>
+                            <div>
+                                <span class="text-on-surface-variant">Web:</span>
+                                <a href="http://localhost:{{ vps.web_port }}" target="_blank" class="text-indigo-600 hover:underline text-xs">
+                                    :{{ vps.web_port }}
+                                </a>
+                            </div>
+                        </div>
+                    </td>
                     <td class="px-stack-lg py-4 text-body-sm">{{ vps.ram }}</td>
                     <td class="px-stack-lg py-4 text-body-sm">{{ vps.cpu }}</td>
                     <td class="px-stack-lg py-4">

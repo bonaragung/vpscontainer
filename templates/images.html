@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}Available Images - CloudStack VPS{% endblock %}
+
+{% block content %}
+<div class="mb-stack-lg">
+    <h1 class="font-h1 text-h1 text-on-surface">Available Images</h1>
+    <p class="text-body-base text-on-surface-variant">List of Docker images available for VPS creation.</p>
+</div>
+
+<div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+    <div class="px-stack-lg py-stack-md border-b border-slate-100 flex items-center gap-2 bg-slate-50/50">
+        <span class="material-symbols-outlined text-slate-500">image</span>
+        <h3 class="text-h3 font-h3">Docker Images</h3>
+    </div>
+    
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-slate-50">
+                    <th class="px-stack-lg py-3 text-label-caps text-on-surface-variant uppercase">Image Name</th>
+                    <th class="px-stack-lg py-3 text-label-caps text-on-surface-variant uppercase">Status</th>
+                    <th class="px-stack-lg py-3 text-label-caps text-on-surface-variant uppercase">Action</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+                {% for img in available_images %}
+                <tr class="hover:bg-slate-50 transition-colors">
+                    <td class="px-stack-lg py-4">
+                        <span class="font-semibold text-body-sm">{{ img }}</span>
+                    </td>
+                    <td class="px-stack-lg py-4">
+                        {% if img in local_images or (img + ':latest') in local_images %}
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-label-caps bg-green-100 text-green-800">
+                                <span class="h-1.5 w-1.5 rounded-full bg-green-600"></span>
+                                Available Locally
+                            </span>
+                        {% else %}
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-label-caps bg-yellow-100 text-yellow-800">
+                                <span class="h-1.5 w-1.5 rounded-full bg-yellow-600"></span>
+                                Need to Pull
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td class="px-stack-lg py-4">
+                        {% if img not in local_images and (img + ':latest') not in local_images %}
+                            <button onclick="pullImage('{{ img }}')" 
+                                    class="text-xs px-3 py-1 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors">
+                                Pull Image
+                            </button>
+                        {% else %}
+                            <span class="text-xs text-slate-400">Ready</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Pull Result Modal -->
+<div id="pull-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4">
+        <h3 class="text-h3 font-h3 mb-4">Pulling Image</h3>
+        <div id="pull-status" class="text-body-sm text-slate-600 mb-4">Initializing...</div>
+        <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+            <div id="pull-progress" class="h-full bg-indigo-600 w-0 transition-all duration-300"></div>
+        </div>
+        <button onclick="closeModal()" class="mt-4 px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-sm hover:bg-slate-300 transition-colors">
+            Close
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function pullImage(imageName) {
+    const modal = document.getElementById('pull-modal');
+    const status = document.getElementById('pull-status');
+    const progress = document.getElementById('pull-progress');
+    
+    modal.classList.remove('hidden');
+    status.textContent = `Pulling ${imageName}...`;
+    progress.style.width = '30%';
+    
+    // Simulate pull (in real app, this would be an API call)
+    setTimeout(() => {
+        progress.style.width = '60%';
+        status.textContent = 'Downloading layers...';
+        
+        setTimeout(() => {
+            progress.style.width = '90%';
+            status.textContent = 'Extracting...';
+            
+            setTimeout(() => {
+                progress.style.width = '100%';
+                status.textContent = `✅ ${imageName} pulled successfully!`;
+                // Reload page after 1 second
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            }, 800);
+        }, 1000);
+    }, 500);
+}
+
+function closeModal() {
+    document.getElementById('pull-modal').classList.add('hidden');
+}
+
+// Highlight active nav item
+document.addEventListener('DOMContentLoaded', function() {
+    const navMonitor = document.querySelector('.nav-monitor');
+    const sidebarMonitor = document.querySelector('.sidebar-monitor');
+    
+    // Add images nav highlighting
+    const navImages = document.querySelector('.nav-images');
+    const sidebarImages = document.querySelector('.sidebar-images');
+    
+    if (navImages) {
+        navImages.classList.add('bg-indigo-50', 'dark:bg-indigo-900/20', 'text-indigo-700', 'dark:text-indigo-300', 'border-r-2', 'border-indigo-600');
+    }
+    if (sidebarImages) {
+        sidebarImages.classList.add('bg-indigo-50', 'dark:bg-indigo-900/20', 'text-indigo-700', 'dark:text-indigo-300', 'border-r-2', 'border-indigo-600');
+    }
+});
+</script>
+{% endblock %}

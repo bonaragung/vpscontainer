@@ -18,12 +18,34 @@
                     <span class="material-symbols-outlined text-green-600" data-icon="check_circle">check_circle</span>
                     <span class="font-semibold text-green-900">VPS Created Successfully!</span>
                 </div>
-                <div class="text-body-sm text-green-800 space-y-1">
+                <div class="text-body-sm text-green-800 space-y-2">
                     <p><strong>Name:</strong> {{ name }}</p>
                     <p><strong>Hostname:</strong> {{ hostname }}</p>
-                    <p><strong>SSH Port:</strong> <code class="bg-green-100 px-2 py-0.5 rounded">{{ ssh_port }}</code></p>
-                    <p><strong>Web Port:</strong> <code class="bg-green-100 px-2 py-0.5 rounded">{{ web_port }}</code></p>
-                    <p><strong>Resources:</strong> {{ ram }} RAM, {{ cpu }} CPU, {{ storage }} Storage</p>
+                    
+                    <!-- SSH Info -->
+                    <div class="p-3 bg-slate-900 rounded-lg mt-2">
+                        <p class="text-green-400 font-semibold mb-1">🔒 SSH Access</p>
+                        <code class="block text-green-400 text-xs mb-1">
+                            ssh {{ ssh_username }}@localhost -p {{ ssh_port }}
+                        </code>
+                        <p class="text-green-100 text-xs">Password: 
+                            <code class="bg-green-800 px-1 rounded">{{ ssh_password }}</code>
+                            <button onclick="navigator.clipboard.writeText('{{ ssh_password }}')" class="text-xs text-green-400 underline ml-2">Copy</button>
+                        </p>
+                        <p class="text-yellow-300 text-xs mt-1">⚠️ Save this password! It won't be shown again.</p>
+                    </div>
+                    
+                    <!-- Web Info -->
+                    <div class="p-3 bg-slate-900 rounded-lg mt-2">
+                        <p class="text-purple-400 font-semibold mb-1">🌐 Web Access</p>
+                        <code class="block text-purple-400 text-xs">
+                            <a href="http://localhost:{{ web_port }}" target="_blank" class="hover:underline">
+                                http://localhost:{{ web_port }}
+                            </a>
+                        </code>
+                    </div>
+                    
+                    <p class="mt-2"><strong>Resources:</strong> {{ ram }} RAM, {{ cpu }} CPU, {{ storage }} Storage</p>
                     <p><strong>Image:</strong> {{ image }}</p>
                     {% if description %}<p><strong>Description:</strong> {{ description }}</p>{% endif %}
                     <p><strong>Container ID:</strong> <code class="bg-green-100 px-2 py-0.5 rounded font-code text-xs">{{ container_id }}</code></p>
